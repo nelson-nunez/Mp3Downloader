@@ -1,4 +1,6 @@
-MP3_Downloader/.vs/
 MP3_Downloader/bin/
+MP3_Downloader/.vs/
 MP3_Downloader/obj/
 packages/
+.vs/
+MP3_Downloader/ffmpeg.exe

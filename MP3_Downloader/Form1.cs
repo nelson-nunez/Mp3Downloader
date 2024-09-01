@@ -12,53 +12,81 @@ using System.IO;
 using System.Linq;
 using System.Reflection.Emit;
 using System.Text;
+using System.Text.Json.Nodes;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Xml.Linq;
 using YoutubeExplode;
 
 namespace MP3_Downloader
 {
-    public partial class Form1 : Form
+    public partial class MP3Downloader : Form
     {
         #region Vars
-        string outputDirectory = @"";
-        string convertedDirectory = @"";
+      
         List<Encolado> colaUrls = new List<Encolado>();
         List<DownloadedVideo> downloadscompleted = new List<DownloadedVideo>();
         YoutubeClient youtube = new YoutubeClient();
         bool IsOcupied = false;
+        //PATHS
+        string outputDirectory = @"";
+        string convertedDirectory = @"";
+
         #endregion
 
-        public Form1()
+        public MP3Downloader()
         {
             InitializeComponent();
             dataGridView1.ConfigurarGrids();
             dataGridView2.ConfigurarGrids();
-            dataGridView1.CargarGrid(new List<string> { "Nombre", "Status", "Tiempo" }, colaUrls);
-            dataGridView2.Mostrar(downloadscompleted);
+            dataGridView1.CargarGrid(new List<string> { "Nombre", "Status", "Tiempo" }, colaUrls);           
+            dataGridView2.CargarGrid(new List<string> { "Titulo", "Extension", "TiempoDescarga", "Ubicacion" }, downloadscompleted);
+           
 
             #region Configurar labels
 
-            convertLabel.MaximumSize = new Size(295, 0);
-            convertLabel.AutoSize = true;
+            convirtiendo_Label.MaximumSize = new Size(430, 0);
+            convirtiendo_Label.AutoSize = true;
             
-            convertLabel.MaximumSize = new Size(295, 0);
-            convertLabel.AutoSize = true;
+            carpeta_a_conver_label.MaximumSize = new Size(350, 0);
+            carpeta_a_conver_label.AutoSize = true;
 
-            label5.MaximumSize = new Size(199,0);
-            label5.AutoSize = true;
+            destino_descargas_label.MaximumSize = new Size(199,0);
+            destino_descargas_label.AutoSize = true;
 
             #endregion
- 
-            // Verificar si el directorio existe
-            var directorio_normal = "F:\\4.Mi música\\ZZ-NUEVAS-DESCARGAS";
-            if (Directory.Exists(directorio_normal))
-            {
-                outputDirectory = directorio_normal;
-                label5.Text = outputDirectory;
-            }
-        }
 
+            #region Directorios
+
+            try
+            {
+                // Para mi PC, verifico si el directorio existe y lo preseteo
+                var directorioNormal = "F:\\4.Mi música\\ZZ-NUEVAS-DESCARGAS";
+                if (Directory.Exists(directorioNormal))
+                {
+                    outputDirectory = directorioNormal;
+                    destino_descargas_label.Text = outputDirectory;
+                }
+                // Configurar la ruta de FFmpeg
+                string ffmpegPath = Path.Combine(Directory.GetCurrentDirectory(), "ffmpeg.exe");
+                if (!File.Exists(ffmpegPath))
+                {
+                    string parentDirectory = Directory.GetParent(Directory.GetParent(Directory.GetCurrentDirectory())?.FullName)?.FullName;
+                    ffmpegPath = parentDirectory != null ? Path.Combine(parentDirectory, "ffmpeg.exe") : null;
+                }
+                if (File.Exists(ffmpegPath))
+                    GlobalFFOptions.Configure(new FFOptions { BinaryFolder = Path.GetDirectoryName(ffmpegPath) });
+                else
+                    throw new FileNotFoundException("No se encontró el ejecutable de FFmpeg.");                
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error al leer el archivo de configuración: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+
+            #endregion
+        }
         #region Buttons
 
         private async void Descargar_Click(object sender, EventArgs e)
@@ -124,7 +152,7 @@ namespace MP3_Downloader
                     finally
                     {
                         dataGridView1.CargarGrid(new List<string> { "Nombre", "Status", "Tiempo" }, colaUrls);
-                        dataGridView2.Mostrar(downloadscompleted);
+                        dataGridView2.CargarGrid(new List<string> { "Titulo", "Extension", "TiempoDescarga", "Ubicacion" }, downloadscompleted);
                     }
                 }
             }
@@ -170,7 +198,7 @@ namespace MP3_Downloader
             if (folderBrowserDialog1.ShowDialog() == DialogResult.OK)
             {
                 outputDirectory = folderBrowserDialog1.SelectedPath;
-                label5.Text = outputDirectory;
+                destino_descargas_label.Text = outputDirectory;
             }
         }
 
@@ -197,7 +225,7 @@ namespace MP3_Downloader
             if (folderBrowserDialog2.ShowDialog() == DialogResult.OK)
             {
                 convertedDirectory = folderBrowserDialog2.SelectedPath;
-                label1.Text = convertedDirectory;
+                carpeta_a_conver_label.Text = convertedDirectory;
             }
         }
 
@@ -210,26 +238,12 @@ namespace MP3_Downloader
                     MessageBox.Show("Awantiaaaaa estoy trabajando");
                     return;
                 }
+                //Verifica que esté seleccionado
+                if (String.IsNullOrEmpty(convertedDirectory))
+                    SelectDirectory();
+
                 InputsExtensions.PedirConfirmacion("Desea continuar con la conversión? Se duplicaran todos los archivos mp3");
-
-                IsOcupied = true;
-                button4.Text = "Convirtiendo, espere..";
-                button4.BackColor = Color.DarkRed;
-
-                string[] audioFiles = Directory.GetFiles(convertedDirectory, "*.mp3");
-                List<Task> conversionTasks = new List<Task>();
-
-                foreach (string filePath in audioFiles)
-                {
-                    convertLabel.Text = "Convirtiendo: " + filePath;
-                    await Task.Delay(100);
-                    Task conversionTask = YoutubeClientExtensions.ConvertToMP3Async(filePath, convertedDirectory);
-                    conversionTasks.Add(conversionTask);
-                }
-
-                // Esperar a que todas las conversiones terminen
-                await Task.WhenAll(conversionTasks);
-                MessageBox.Show("Todos los archivos se han convertido exitosamente.");
+                await ConvertirDirectorio();
             }
             catch (Exception ex)
             {
@@ -237,23 +251,33 @@ namespace MP3_Downloader
             }
             finally
             {
-                button4.Text = "Convertir todo a mp3";
-                convertLabel.Text = "";
+                button4.Text = "Convertir carpeta a mp3";
+                convirtiendo_Label.Text = "";
                 button4.BackColor = Color.White;
                 IsOcupied = false;
             }
         }
 
-        #endregion
-
-        private void dataGridView1_CellClick(object sender, DataGridViewCellEventArgs e)
+        private async Task ConvertirDirectorio()
         {
-            if (IsOcupied)
+            IsOcupied = true;
+            button4.Text = "Convirtiendo, espere..";
+            button4.BackColor = Color.DarkRed;
+            string[] audioFiles = Directory.GetFiles(convertedDirectory, "*.mp3");
+            List<Task> conversionTasks = new List<Task>();
+            foreach (string filePath in audioFiles)
             {
-                MessageBox.Show("Awantiaaaaa estoy trabajando");
-                return;
+                convirtiendo_Label.Text = "Convirtiendo: " + filePath;
+                await Task.Delay(100);
+                Task conversionTask = YoutubeClientExtensions.ConvertToMP3Async(filePath, convertedDirectory);
+                conversionTasks.Add(conversionTask);
             }
-            //Aca agregar opciones para sacar de la lista
+            // Esperar a que todas las conversiones terminen
+            await Task.WhenAll(conversionTasks);
+            MessageBox.Show("Todos los archivos se han convertido correctamente.");
+            IsOcupied = false;
         }
+
+        #endregion
     }
 }

@@ -22,6 +22,7 @@ namespace MP3_Downloader.Extensions
     public static class YoutubeClientExtensions
     {
         #region Descargas
+  
         public static async Task<DownloadedVideo> DownloadMP3Async(this YoutubeClient youtube, string videoUrl, string outputDirectory)
         {
             // Inicializar el cronómetro y la lista de logs
@@ -29,11 +30,6 @@ namespace MP3_Downloader.Extensions
             Stopwatch stopwatchtotal = new Stopwatch();
             string logFilePath = Path.Combine(outputDirectory, "timing_log.txt");
             List<string> logMessages = new List<string>();
-
-            //// setting global options
-            string ffmpegPath = @"F:\PROYECTOS WEB & SISTEMAS\Mp3_Downloader\MP3_Downloader\packages";
-            //string ffmpegPath = Directory.GetCurrentDirectory();
-            GlobalFFOptions.Configure(new FFOptions { BinaryFolder = ffmpegPath });
 
             try
             {
@@ -109,6 +105,7 @@ namespace MP3_Downloader.Extensions
                 File.AppendAllLines(logFilePath, logMessages);
             }
         }
+     
         #endregion
 
         #region Conversión
@@ -118,12 +115,6 @@ namespace MP3_Downloader.Extensions
             Stopwatch stopwatch = new Stopwatch();
             string logFilePath = Path.Combine(outputDirectory, "timing_log.txt");
             List<string> logMessages = new List<string>();
-
-            // Configurar la ruta de FFmpeg
-            //string ffmpegPath = Directory.GetCurrentDirectory();             
-            string ffmpegPath = @"F:\PROYECTOS WEB & SISTEMAS\Mp3_Downloader\MP3_Downloader\packages";
-
-            GlobalFFOptions.Configure(new FFOptions { BinaryFolder = ffmpegPath });
 
             try
             {
@@ -158,9 +149,7 @@ namespace MP3_Downloader.Extensions
             }
         }
 
-
         #endregion
-
 
         #region Youtube urls
 
