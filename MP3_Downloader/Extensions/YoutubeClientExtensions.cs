@@ -121,11 +121,11 @@ namespace MP3_Downloader.Extensions
                 if (!File.Exists(inputFilePath))
                     throw new FileNotFoundException("El archivo especificado no existe.", inputFilePath);
                 string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(inputFilePath);
-                if (fileNameWithoutExtension.StartsWith("converted_"))
+                if (fileNameWithoutExtension.StartsWith("new_"))
                 {
                     return inputFilePath;
                 }
-                string outputFilePath = Path.Combine(outputDirectory, $"converted_{fileNameWithoutExtension}.mp3");
+                string outputFilePath = Path.Combine(outputDirectory, $"new_{fileNameWithoutExtension}.mp3");
                 stopwatch.Start();
 
                 // Convertir el archivo a MP3 usando FFmpeg

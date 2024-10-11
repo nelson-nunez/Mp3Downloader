@@ -279,5 +279,31 @@ namespace MP3_Downloader
         }
 
         #endregion
+
+        private async void button6_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                if (IsOcupied)
+                {
+                    MessageBox.Show("Awantiaaaaa estoy trabajando");
+                    return;
+                }
+                if (String.IsNullOrEmpty(convertedDirectory))
+                    SelectDirectory();
+                InputsExtensions.PedirConfirmacion("Desea continuar con la eliminación de duplicados?");
+                button6.Text = "Eliminando duplicados...";
+                await convertedDirectory.EliminarArchivosDuplicadosAsync();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
+            finally
+            {
+                button6.Text = "Eliminar duplicados";
+                IsOcupied = false;
+            }
+        }
     }
 }
