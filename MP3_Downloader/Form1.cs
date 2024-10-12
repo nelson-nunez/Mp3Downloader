@@ -293,7 +293,9 @@ namespace MP3_Downloader
                     SelectDirectory();
                 InputsExtensions.PedirConfirmacion("Desea continuar con la eliminación de duplicados?");
                 button6.Text = "Eliminando duplicados...";
-                await convertedDirectory.EliminarArchivosDuplicadosAsync();
+                await Task.Delay(2000);
+                var cant = await convertedDirectory.EliminarArchivosDuplicadosAsync();
+                MessageBox.Show("Se eliminaron " + cant  + " archivos duplicados.");
             }
             catch (Exception ex)
             {

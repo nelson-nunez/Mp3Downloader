@@ -11,9 +11,10 @@ public static class DirectoryExtensions
     /// <summary>
     /// Elimina los archivos MP3 duplicados en un directorio, comparando tanto por nombre como por metadatos.
     /// Conserva el archivo con el prefijo "new_" y con la fecha de creación más reciente, eliminando el resto.
+    /// Devuelve la cantidad de archivos eliminados.
     /// </summary>
     /// <param name="directorio">El directorio donde buscar y eliminar los archivos duplicados.</param>
-    public static async Task EliminarArchivosDuplicadosAsync(this string directorio)
+    public static async Task<int> EliminarArchivosDuplicadosAsync(this string directorio)
     {
         if (string.IsNullOrEmpty(directorio) || !Directory.Exists(directorio))
         {
@@ -24,6 +25,8 @@ public static class DirectoryExtensions
         string[] audioFiles = Directory.GetFiles(directorio, "*.mp3");
         Dictionary<string, List<string>> nameMap = new Dictionary<string, List<string>>(); // Archivos por nombre
         Dictionary<string, List<string>> metadataMap = new Dictionary<string, List<string>>(); // Archivos por metadata
+
+        int archivosEliminados = 0; // Contador de archivos eliminados
 
         // Primer bucle: organizar archivos en función del nombre y metadatos
         foreach (string filePath in audioFiles)
@@ -68,7 +71,7 @@ public static class DirectoryExtensions
             if (entry.Value.Count > 1)
             {
                 string fileToKeep = GetMostRecentFile(entry.Value);
-                EliminarDuplicados(fileToKeep, entry.Value);
+                archivosEliminados += EliminarDuplicados(fileToKeep, entry.Value);
             }
         }
 
@@ -78,9 +81,11 @@ public static class DirectoryExtensions
             if (entry.Value.Count > 1)
             {
                 string fileToKeep = GetMostRecentFile(entry.Value);
-                EliminarDuplicados(fileToKeep, entry.Value);
+                archivosEliminados += EliminarDuplicados(fileToKeep, entry.Value);
             }
         }
+
+        return archivosEliminados; // Retornar el número total de archivos eliminados
     }
 
     /// <summary>
@@ -111,11 +116,15 @@ public static class DirectoryExtensions
 
     /// <summary>
     /// Elimina todos los archivos duplicados excepto el que se debe conservar.
+    /// Devuelve la cantidad de archivos eliminados.
     /// </summary>
     /// <param name="fileToKeep">El archivo que se va a conservar.</param>
     /// <param name="allFiles">La lista de archivos que incluye los duplicados.</param>
-    private static void EliminarDuplicados(string fileToKeep, List<string> allFiles)
+    /// <returns>Cantidad de archivos eliminados.</returns>
+    private static int EliminarDuplicados(string fileToKeep, List<string> allFiles)
     {
+        int eliminados = 0;
+
         foreach (var file in allFiles)
         {
             if (file != fileToKeep)
@@ -124,6 +133,7 @@ public static class DirectoryExtensions
                 {
                     File.Delete(file);
                     Console.WriteLine($"Archivo eliminado: {file}");
+                    eliminados++;
                 }
                 catch (Exception ex)
                 {
@@ -131,5 +141,7 @@ public static class DirectoryExtensions
                 }
             }
         }
+
+        return eliminados; // Retornar la cantidad de archivos eliminados
     }
 }
