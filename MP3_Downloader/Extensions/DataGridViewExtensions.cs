@@ -10,7 +10,6 @@ namespace MP3_Downloader
 {
     public static class DataGridViewExtensions
     {
-
         public static T VerificarYRetornarSeleccion<T>(this DataGridView grid) where T : class
         {
             if (grid == null)
@@ -25,45 +24,22 @@ namespace MP3_Downloader
             return grid.SelectedRows[0].DataBoundItem as T;
         }
 
-        public static void VerificarSeleccion(this DataGridView grid)
-        {
-            if (grid == null)
-                throw new ArgumentNullException(nameof(grid), "La lista no puede ser nula.");
-            if (grid.Rows.Count == 0)
-                throw new Exception("La lista está vacía.");
-            if (grid.SelectedRows.Count <= 0)
-                throw new Exception("Debe seleccionar un item para continuar.");
-            if (grid.SelectedRows[0].DataBoundItem == null)
-                throw new Exception("No se ha vinculado ningún item a la fila seleccionada.");
-        }
-
-        public static void ConfigurarGrids(this DataGridView dataGridView, bool autogenerate = true)
+        public static void ConfigurarGrids(this DataGridView dataGridView)
         {
             dataGridView.MultiSelect = false;
-            dataGridView.AutoGenerateColumns = autogenerate;
+            // Deshabilitar edición en el DataGridView
+            dataGridView.EditMode = DataGridViewEditMode.EditProgrammatically; // Evita edición directa
+            dataGridView.ReadOnly = true; // Hacer todo el DataGridView de solo lectura
             dataGridView.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
             dataGridView.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.AllCells;
+
+            // Configurar estilos
             dataGridView.DefaultCellStyle.Font = new Font("Calibri", 8);
+            dataGridView.DefaultCellStyle.ForeColor = Color.Black; // Establecer el color del texto
             dataGridView.ColumnHeadersDefaultCellStyle.Font = new Font("Calibri", 8, FontStyle.Bold);
+            dataGridView.ColumnHeadersDefaultCellStyle.ForeColor = Color.Black; // Establecer el color del texto en las cabeceras
             dataGridView.RowsDefaultCellStyle.Font = new Font("Calibri", 8);
-        }
-
-        public static void Mostrar<T>(this DataGridView dataGridView, List<T> listaDeItems)
-        {
-            if (dataGridView.InvokeRequired)
-            {
-                dataGridView.Invoke(new Action(() => Mostrar(dataGridView, listaDeItems)));
-                return;
-            }
-
-            // Asigna la lista como fuente de datos
-            dataGridView.DataSource = null;
-            dataGridView.DataSource = listaDeItems;
-            dataGridView.AutoResizeColumns();
-
-            //Va hasta el ultimo elemento
-            if (dataGridView.Rows.Count > 0)
-                dataGridView.FirstDisplayedScrollingRowIndex = dataGridView.Rows.Count - 1;
+            dataGridView.RowsDefaultCellStyle.ForeColor = Color.Black; // Establecer el color del texto en las filas
         }
 
         public static void CargarGrid<T>(this DataGridView dataGridView, List<string> campos, List<T> listaDeItems)
@@ -79,15 +55,29 @@ namespace MP3_Downloader
                 };
                 dataGridView.Columns.Add(columna);
             }
-
             dataGridView.AutoGenerateColumns = false;
             dataGridView.DataSource = null;
             dataGridView.DataSource = listaDeItems;
             dataGridView.AutoResizeColumns();
-            
-            //Va hasta el ultimo elemento
-            if (dataGridView.Rows.Count > 0)
-                dataGridView.FirstDisplayedScrollingRowIndex = dataGridView.Rows.Count - 1;
+        }
+
+        public static void CargarGrids<T>(this DataGridView dataGridView, List<KeyValuePair<string, string>> campos, List<T> listaDeItems)
+        {
+            dataGridView.Columns.Clear();
+            foreach (var field in campos)
+            {
+                var columna = new DataGridViewTextBoxColumn
+                {
+                    HeaderText = field.Value,
+                    DataPropertyName = field.Key,
+                    Name = field.Key
+                };
+                dataGridView.Columns.Add(columna);
+            }
+            dataGridView.AutoGenerateColumns = false;
+            dataGridView.DataSource = null;
+            dataGridView.DataSource = listaDeItems;
+            dataGridView.AutoResizeColumns();
         }
     }
 }

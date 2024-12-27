@@ -149,6 +149,50 @@ namespace MP3_Downloader.Extensions
             }
         }
 
+        public static async Task<string> ConvertDeletingToMP3Async(string inputFilePath, string outputDirectory)
+        {
+            Stopwatch stopwatch = new Stopwatch();
+            string logFilePath = Path.Combine(outputDirectory, "timing_log.txt");
+            List<string> logMessages = new List<string>();
+
+            try
+            {
+                if (!File.Exists(inputFilePath))
+                    throw new FileNotFoundException("El archivo especificado no existe.", inputFilePath);
+
+                string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(inputFilePath);
+                if (fileNameWithoutExtension.StartsWith("new_"))
+                {
+                    return inputFilePath;
+                }
+
+                string outputFilePath = Path.Combine(outputDirectory, $"new_{fileNameWithoutExtension}.mp3");
+                stopwatch.Start();
+
+                // Convertir el archivo a MP3 usando FFmpeg
+                await FFMpegArguments
+                    .FromFileInput(inputFilePath)
+                    .OutputToFile(outputFilePath, overwrite: true, options => options.WithAudioCodec(AudioCodec.LibMp3Lame))
+                    .ProcessAsynchronously();
+
+                stopwatch.Stop();
+                logMessages.Add($"[ConvertToMP3Async] Conversion to MP3: {stopwatch.ElapsedMilliseconds} ms - File: {fileNameWithoutExtension}");
+
+                // Eliminar el archivo original después de la conversión
+                File.Delete(inputFilePath);
+
+                return outputFilePath;
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"Error converting file to MP3: {ex.Message}");
+            }
+            finally
+            {
+                File.AppendAllLines(logFilePath, logMessages);
+            }
+        }
+
         #endregion
 
         #region Youtube urls

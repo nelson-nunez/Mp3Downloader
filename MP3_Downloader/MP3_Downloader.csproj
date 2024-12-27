@@ -145,11 +145,23 @@
     <Compile Include="Extensions\DirectoryExtensions.cs" />
     <Compile Include="Extensions\InputsExtensions.cs" />
     <Compile Include="Extensions\YoutubeClientExtensions.cs" />
-    <Compile Include="Form1.cs">
+    <Compile Include="Form_Convertidor.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Form1.Designer.cs">
-      <DependentUpon>Form1.cs</DependentUpon>
+    <Compile Include="Form_Convertidor.Designer.cs">
+      <DependentUpon>Form_Convertidor.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Form_Descargas.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Form_Descargas.Designer.cs">
+      <DependentUpon>Form_Descargas.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Form_1_Menu.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Form_1_Menu.Designer.cs">
+      <DependentUpon>Form_1_Menu.cs</DependentUpon>
     </Compile>
     <Compile Include="Interfaces\IRepository.cs" />
     <Compile Include="Models\DownloadedVideo.cs" />
@@ -157,8 +169,14 @@
     <Compile Include="Models\ListRepository.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <EmbeddedResource Include="Form1.resx">
-      <DependentUpon>Form1.cs</DependentUpon>
+    <EmbeddedResource Include="Form_Convertidor.resx">
+      <DependentUpon>Form_Convertidor.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form_Descargas.resx">
+      <DependentUpon>Form_Descargas.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form_1_Menu.resx">
+      <DependentUpon>Form_1_Menu.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
@@ -168,6 +186,7 @@
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
       <DependentUpon>Resources.resx</DependentUpon>
+      <DesignTime>True</DesignTime>
     </Compile>
     <None Include="MP3_Downloader_TemporaryKey.pfx" />
     <None Include="packages.config" />
@@ -196,6 +215,33 @@
       <ProductName>.NET Framework 3.5 SP1</ProductName>
       <Install>false</Install>
     </BootstrapperPackage>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\cerrar.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\descargar.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\mp3.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\papel.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\agregar.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\convertir.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\eliminar.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\logo1.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\carpeta.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">

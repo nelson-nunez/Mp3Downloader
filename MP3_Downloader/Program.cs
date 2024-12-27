@@ -16,7 +16,7 @@ namespace MP3_Downloader
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new MP3Downloader());
+            Application.Run(new Form_1_Menu());
         }
     }
 }

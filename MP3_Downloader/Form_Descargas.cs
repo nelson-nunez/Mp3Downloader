@@ -21,7 +21,7 @@ using YoutubeExplode;
 
 namespace MP3_Downloader
 {
-    public partial class MP3Downloader : Form
+    public partial class Form_Descargas : Form
     {
         #region Vars
       
@@ -35,24 +35,17 @@ namespace MP3_Downloader
 
         #endregion
 
-        public MP3Downloader()
+        public Form_Descargas()
         {
             InitializeComponent();
             dataGridView1.ConfigurarGrids();
             dataGridView2.ConfigurarGrids();
             dataGridView1.CargarGrid(new List<string> { "Nombre", "Status", "Tiempo" }, colaUrls);           
             dataGridView2.CargarGrid(new List<string> { "Titulo", "Extension", "TiempoDescarga", "Ubicacion" }, downloadscompleted);
-           
 
             #region Configurar labels
 
-            convirtiendo_Label.MaximumSize = new Size(430, 0);
-            convirtiendo_Label.AutoSize = true;
-            
-            carpeta_a_conver_label.MaximumSize = new Size(350, 0);
-            carpeta_a_conver_label.AutoSize = true;
-
-            destino_descargas_label.MaximumSize = new Size(199,0);
+            destino_descargas_label.MaximumSize = new Size(170,0);
             destino_descargas_label.AutoSize = true;
 
             #endregion
@@ -86,13 +79,16 @@ namespace MP3_Downloader
             }
 
             #endregion
+
+            if (String.IsNullOrEmpty(outputDirectory))
+                toolStripStatusLabel1.Text = $"Seleccione un directorio de descarga";
         }
+
         #region Buttons
 
         private async void Descargar_Click(object sender, EventArgs e)
         {
-            if (String.IsNullOrEmpty(outputDirectory))
-                SelectDirectory();
+            VerifySelectDirectory();
 
             if (IsOcupied)
             {
@@ -116,7 +112,13 @@ namespace MP3_Downloader
 
         private void button3_Click(object sender, EventArgs e)
         {
-            SelectDirectory();
+           //Entro a cambiarlo siempre
+            if (folderBrowserDialog1.ShowDialog() == DialogResult.OK)
+            {
+                outputDirectory = folderBrowserDialog1.SelectedPath;
+                destino_descargas_label.Text = outputDirectory;
+            }
+            toolStripStatusLabel1.Text = "";
         }
 
         #endregion
@@ -135,11 +137,17 @@ namespace MP3_Downloader
                     try
                     {
                         itemurl.Status = $"Descargando...";
+                        toolStripStatusLabel1.Text = $"Descargando...";
+
                         dataGridView1.CargarGrid(new List<string> { "Nombre", "Status", "Tiempo" }, colaUrls);
                         var response = await youtube.DownloadMP3Async(itemurl.Url, outputDirectory);
+                        // Convertir el archivo descargado a MP3 y eliminar el original
+                        var tt = await YoutubeClientExtensions.ConvertDeletingToMP3Async(response.Ubicacion, outputDirectory);
                         downloadscompleted.Add(response);
                         // Actualizar estado a "Completado"
                         itemurl.Status = $"Completado {itemurl.Nombre}";
+                        toolStripStatusLabel1.Text = $"Completado {itemurl.Nombre}";
+
                         // Eliminar de la lista de encolados
                         colaUrls.RemoveAt(i);
                         i--; 
@@ -179,7 +187,7 @@ namespace MP3_Downloader
                     if (!colaUrls.Any(x => x.Url == item.Url) && !downloadscompleted.Any(x => x.Url == item.Url))
                         colaUrls.Add(item);
                     else
-                        MessageBox.Show("Ya está agregado ese tema gil");
+                        MessageBox.Show("Ya está agregado ese tema");
                 }
             }
             catch (Exception ex)
@@ -193,12 +201,16 @@ namespace MP3_Downloader
             }
         }
 
-        private void SelectDirectory()
+        private void VerifySelectDirectory()
         {
-            if (folderBrowserDialog1.ShowDialog() == DialogResult.OK)
+            while (String.IsNullOrEmpty(outputDirectory))
             {
-                outputDirectory = folderBrowserDialog1.SelectedPath;
-                destino_descargas_label.Text = outputDirectory;
+                if (folderBrowserDialog1.ShowDialog() == DialogResult.OK)
+                {
+                    outputDirectory = folderBrowserDialog1.SelectedPath;
+                    destino_descargas_label.Text = outputDirectory;
+                }
+                toolStripStatusLabel1.Text = "";
             }
         }
 
@@ -217,95 +229,5 @@ namespace MP3_Downloader
         }
 
         #endregion
-
-        #region Conversion
-
-        private void button5_Click(object sender, EventArgs e)
-        {
-            if (folderBrowserDialog2.ShowDialog() == DialogResult.OK)
-            {
-                convertedDirectory = folderBrowserDialog2.SelectedPath;
-                carpeta_a_conver_label.Text = convertedDirectory;
-            }
-        }
-
-        private async void button4_Click(object sender, EventArgs e)
-        {
-            try
-            {
-                if (IsOcupied)
-                {
-                    MessageBox.Show("Awantiaaaaa estoy trabajando");
-                    return;
-                }
-                //Verifica que esté seleccionado
-                if (String.IsNullOrEmpty(convertedDirectory))
-                    SelectDirectory();
-
-                InputsExtensions.PedirConfirmacion("Desea continuar con la conversión? Se duplicaran todos los archivos mp3");
-                await ConvertirDirectorio();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message);
-            }
-            finally
-            {
-                button4.Text = "Convertir carpeta a mp3";
-                convirtiendo_Label.Text = "";
-                button4.BackColor = Color.White;
-                IsOcupied = false;
-            }
-        }
-
-        private async Task ConvertirDirectorio()
-        {
-            IsOcupied = true;
-            button4.Text = "Convirtiendo, espere..";
-            button4.BackColor = Color.DarkRed;
-            string[] audioFiles = Directory.GetFiles(convertedDirectory, "*.mp3");
-            List<Task> conversionTasks = new List<Task>();
-            foreach (string filePath in audioFiles)
-            {
-                convirtiendo_Label.Text = "Convirtiendo: " + filePath;
-                await Task.Delay(100);
-                Task conversionTask = YoutubeClientExtensions.ConvertToMP3Async(filePath, convertedDirectory);
-                conversionTasks.Add(conversionTask);
-            }
-            // Esperar a que todas las conversiones terminen
-            await Task.WhenAll(conversionTasks);
-            MessageBox.Show("Todos los archivos se han convertido correctamente.");
-            IsOcupied = false;
-        }
-
-        #endregion
-
-        private async void button6_Click(object sender, EventArgs e)
-        {
-            try
-            {
-                if (IsOcupied)
-                {
-                    MessageBox.Show("Awantiaaaaa estoy trabajando");
-                    return;
-                }
-                if (String.IsNullOrEmpty(convertedDirectory))
-                    SelectDirectory();
-                InputsExtensions.PedirConfirmacion("Desea continuar con la eliminación de duplicados?");
-                button6.Text = "Eliminando duplicados...";
-                await Task.Delay(2000);
-                var cant = await convertedDirectory.EliminarArchivosDuplicadosAsync();
-                MessageBox.Show("Se eliminaron " + cant  + " archivos duplicados.");
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message);
-            }
-            finally
-            {
-                button6.Text = "Eliminar duplicados";
-                IsOcupied = false;
-            }
-        }
     }
 }
