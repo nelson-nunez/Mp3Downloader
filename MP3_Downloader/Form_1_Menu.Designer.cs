@@ -89,6 +89,7 @@
             this.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
             this.ClientSize = new System.Drawing.Size(784, 661);
             this.Controls.Add(this.menuStrip1);
+            this.DoubleBuffered = true;
             this.Name = "Form_1_Menu";
             this.Text = "Form_Menu";
             this.menuStrip1.ResumeLayout(false);
