@@ -62,7 +62,7 @@
     <GenerateManifests>true</GenerateManifests>
   </PropertyGroup>
   <PropertyGroup>
-    <SignManifests>true</SignManifests>
+    <SignManifests>false</SignManifests>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="ILMerge" Version="3.0.41" />
@@ -70,10 +70,10 @@
       <Version>2.3.0</Version>
     </PackageReference>
     <PackageReference Include="YoutubeExplode">
-      <Version>6.5.4</Version>
+      <Version>6.6.0</Version>
     </PackageReference>
     <PackageReference Include="YoutubeExplode.Converter">
-      <Version>6.5.4</Version>
+      <Version>6.6.0</Version>
     </PackageReference>
     <Reference Include="AngleSharp, Version=1.1.2.0, Culture=neutral, PublicKeyToken=e83494dcdc6d31ea, processorArchitecture=MSIL">
       <HintPath>..\packages\AngleSharp.1.1.2\lib\net472\AngleSharp.dll</HintPath>
@@ -189,7 +189,6 @@
       <DependentUpon>Resources.resx</DependentUpon>
       <DesignTime>True</DesignTime>
     </Compile>
-    <None Include="MP3_Downloader_TemporaryKey.pfx" />
     <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>

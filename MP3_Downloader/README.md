@@ -1,68 +1,7 @@
-# Instances
-A .NET Standard `Process` wrapper with an elegant API, for both asyncronous and syncronous use, providing both Events and support for Tasks with cancellation support
- 
-![.NET Core](https://github.com/rosenbjerg/Instances/workflows/CI/badge.svg)
-[![codecov.io](https://codecov.io/github/rosenbjerg/agentdeploy/coverage.svg?branch=main)](https://app.codecov.io/gh/rosenbjerg/Instances)
-[![GitHub](https://img.shields.io/github/license/rosenbjerg/Instances)](https://github.com/rosenbjerg/Instances/blob/master/LICENSE)
-[![Nuget](https://img.shields.io/nuget/v/instances)](https://www.nuget.org/packages/instances/)
-[![Nuget](https://img.shields.io/nuget/dt/instances)](https://www.nuget.org/packages/instances/)
-![Dependent repos (via libraries.io)](https://img.shields.io/librariesio/dependent-repos/nuget/instances)
+# MP3 Downloader
 
+MP3 Downloader es una aplicación de escritorio Windows Forms (.NET Framework 4.8) que permite descargar videos de YouTube y convertirlos automáticamente a formato MP3. La aplicación utiliza una interfaz MDI donde una ventana principal (`Form_1_Menu`) actúa como contenedor de dos módulos independientes: descargas y conversión, que se abren como formularios hijos sin bordes dentro de la ventana principal.
 
-# Usage
-There are three ways to use this library, requiring at least 1, 2, or 3 lines of code to use.
+El módulo de descargas (`Form_Descargas`) permite encolar URLs de YouTube, descargarlas mediante la librería `YoutubeExplode` y convertir el audio extraído a MP3 usando `FFMpegCore` (con un binario de `ffmpeg.exe` local). El módulo de conversión (`Form_Convertidor`) permite tomar archivos ya existentes en una carpeta y convertirlos a MP3, gestionando además metadatos de las pistas mediante `TagLibSharp`. Ambos módulos comparten modelos comunes como `Encolado` y `DownloadedVideo` para representar el estado de la cola y el historial de descargas/conversiones en tablas (`DataGridView`).
 
-### Shortest form, supporting only few options
-```c#
-var result = await Instance.FinishAsync("dotnet", "build -c Release", cancellationToken);
-Console.WriteLine(result.ExitCode);
-// or
-var result = Instance.Finish("dotnet", "build -c Release");
-```
-
-### Short form, supporting more options
-```c#
-using var instance = Instance.Start("dotnet", "build -c Release");
-var result = await instance.WaitForExitAsync(cancellationToken);
-// or
-using var instance = Instance.Start("dotnet", "build -c Release");
-var result = instance.WaitForExit();
-```
-
-### Full form, supporting all options
-```c#
-var processArgument = new ProcessArguments("dotnet", "build -c Release");
-processArgument.Exited += (_, exitResult) => Console.WriteLine(exitResult.ExitCode);
-processArgument.OutputDataReceived += (_, data) => Console.WriteLine(data);
-processArgument.ErrorDataReceived += (_, data) => Console.WriteLine(data);
-
-using var instance = processArgument.Start();
-
-var result = await instance.WaitForExitAsync(cancellationToken);
-// or 
-var result = instance.WaitForExit();
-```
-
-
-## Features
-```c#
-using var instance = Instance.Start("dotnet", "build -c Release");
-
-// send input to process' standard input
-instance.SendInput("Hello World");
-
-// stop the process
-instance.Kill();
-
-// access process output
-foreach (var line in instance.OutputData)
-    Console.WriteLine(line);
-// and error data easily while the process is running
-foreach (var line in instance.ErrorData)
-    Console.WriteLine(line);
-
-// or wait for the process to exit (with support for cancellation token)
-var result = await instance.WaitForExitAsync(cancellationToken);
-Console.WriteLine(result.ExitCode);
-Console.WriteLine(result.OutputData.Count);
-```
+El proyecto está pensado como una herramienta personal para organizar una biblioteca de música descargada desde YouTube, con rutas de salida predefinidas y detección automática del ejecutable de FFmpeg. Entre sus dependencias principales se encuentran `YoutubeExplode`/`YoutubeExplode.Converter` para la extracción de video/audio, `FFMpegCore` y `CliWrap`/`Instances` para invocar FFmpeg, `AngleSharp` para parseo HTML y `TagLibSharp` para el manejo de tags de audio.

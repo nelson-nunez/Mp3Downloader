@@ -31,7 +31,6 @@ namespace MP3_Downloader
         bool IsOcupied = false;
         //PATHS
         string outputDirectory = @"";
-        string convertedDirectory = @"";
 
         #endregion
 
@@ -40,8 +39,12 @@ namespace MP3_Downloader
             InitializeComponent();
             dataGridView1.ConfigurarGrids();
             dataGridView2.ConfigurarGrids();
-            dataGridView1.CargarGrid(new List<string> { "Nombre", "Status", "Tiempo" }, colaUrls);           
+            dataGridView1.CargarGrid(new List<string> { "Nombre", "Status", "Tiempo" }, colaUrls);
             dataGridView2.CargarGrid(new List<string> { "Titulo", "Extension", "TiempoDescarga", "Ubicacion" }, downloadscompleted);
+
+            // Los iconos de estos botones se achican para que no dominen un botón de 140x35
+            button1.Image = RedimensionarIcono(Properties.Resources.descargar, 20, 20);
+            button2.Image = RedimensionarIcono(Properties.Resources.agregar, 20, 20);
 
             #region Configurar labels
 
@@ -84,15 +87,40 @@ namespace MP3_Downloader
                 toolStripStatusLabel1.Text = $"Seleccione un directorio de descarga";
         }
 
+        private static Image RedimensionarIcono(Image original, int ancho, int alto)
+        {
+            var redimensionado = new Bitmap(ancho, alto);
+            using (var g = Graphics.FromImage(redimensionado))
+            {
+                g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
+                g.DrawImage(original, 0, 0, ancho, alto);
+            }
+            return redimensionado;
+        }
+
+        private void SetOcupado(bool ocupado)
+        {
+            IsOcupied = ocupado;
+            button_EliminarPendiente.Enabled = !ocupado;
+            button_EliminarTodos.Enabled = !ocupado;
+        }
+
         #region Buttons
 
         private async void Descargar_Click(object sender, EventArgs e)
         {
-            VerifySelectDirectory();
+            if (!VerifySelectDirectory())
+                return;
 
             if (IsOcupied)
             {
-                MessageBox.Show("Awantiaaaaa estoy trabajando");
+                MessageBox.Show("Ya hay una descarga en curso, espere a que finalice.", "Proceso en curso", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            if (!colaUrls.Any())
+            {
+                MessageBox.Show("No hay descargas pendientes en la cola.", "Cola vacía", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
 
@@ -103,7 +131,7 @@ namespace MP3_Downloader
         {
             if (IsOcupied)
             {
-                MessageBox.Show("Awantiaaaaa estoy trabajando");
+                MessageBox.Show("Ya hay una descarga en curso, espere a que finalice.", "Proceso en curso", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
 
@@ -112,13 +140,47 @@ namespace MP3_Downloader
 
         private void button3_Click(object sender, EventArgs e)
         {
-           //Entro a cambiarlo siempre
+            if (IsOcupied)
+            {
+                MessageBox.Show("No se puede cambiar el destino mientras hay una descarga en curso.", "Proceso en curso", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
             if (folderBrowserDialog1.ShowDialog() == DialogResult.OK)
             {
                 outputDirectory = folderBrowserDialog1.SelectedPath;
                 destino_descargas_label.Text = outputDirectory;
             }
-            toolStripStatusLabel1.Text = "";
+        }
+
+        private void button_EliminarPendiente_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                var seleccionado = dataGridView1.VerificarYRetornarSeleccion<Encolado>();
+                colaUrls.Remove(seleccionado);
+                dataGridView1.RefrescarGrid(colaUrls);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Atención", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+        }
+
+        private void button_EliminarTodos_Click(object sender, EventArgs e)
+        {
+            if (!colaUrls.Any())
+            {
+                MessageBox.Show("No hay descargas pendientes en la cola.", "Cola vacía", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            var confirmacion = MessageBox.Show($"¿Eliminar las {colaUrls.Count} descargas pendientes de la cola?", "Confirmar", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            if (confirmacion != DialogResult.Yes)
+                return;
+
+            colaUrls.Clear();
+            dataGridView1.RefrescarGrid(colaUrls);
         }
 
         #endregion
@@ -127,8 +189,7 @@ namespace MP3_Downloader
 
         private async Task DescargarVideosAsync()
         {
-            IsOcupied = true;
-            string logFilePath = Path.Combine(outputDirectory, "log_tiempos.txt");
+            SetOcupado(true);
             try
             {
                 for (int i = 0; i < colaUrls.Count; i++)
@@ -136,82 +197,121 @@ namespace MP3_Downloader
                     var itemurl = colaUrls[i];
                     try
                     {
-                        itemurl.Status = $"Descargando...";
-                        toolStripStatusLabel1.Text = $"Descargando...";
+                        itemurl.Status = "Descargando...";
+                        ActualizarProgreso(itemurl.Nombre, 0, "Descargando");
+                        dataGridView1.RefrescarGrid(colaUrls);
 
-                        dataGridView1.CargarGrid(new List<string> { "Nombre", "Status", "Tiempo" }, colaUrls);
-                        var response = await youtube.DownloadMP3Async(itemurl.Url, outputDirectory);
+                        int ultimoPorcentaje = -1;
+                        var progreso = new Progress<double>(p =>
+                        {
+                            int porcentaje = Math.Max(0, Math.Min(100, (int)(Math.Floor(p * 10) * 10)));
+                            if (porcentaje != ultimoPorcentaje)
+                            {
+                                ultimoPorcentaje = porcentaje;
+                                ActualizarProgreso(itemurl.Nombre, porcentaje, "Descargando");
+                            }
+                        });
+
+                        var response = await youtube.DownloadMP3Async(itemurl.Url, outputDirectory, progreso);
+
                         // Convertir el archivo descargado a MP3 y eliminar el original
-                        var tt = await YoutubeClientExtensions.ConvertDeletingToMP3Async(response.Ubicacion, outputDirectory);
+                        itemurl.Status = "Convirtiendo...";
+                        ActualizarProgreso(itemurl.Nombre, 100, "Convirtiendo");
+                        await YoutubeClientExtensions.ConvertDeletingToMP3Async(response.Ubicacion, outputDirectory);
                         downloadscompleted.Add(response);
+
                         // Actualizar estado a "Completado"
-                        itemurl.Status = $"Completado {itemurl.Nombre}";
-                        toolStripStatusLabel1.Text = $"Completado {itemurl.Nombre}";
+                        itemurl.Status = "Completado";
+                        ActualizarProgreso(itemurl.Nombre, 100, "Completado");
 
                         // Eliminar de la lista de encolados
                         colaUrls.RemoveAt(i);
-                        i--; 
+                        i--;
                     }
                     catch (Exception ex)
                     {
                         itemurl.Status = $"Error: {ex.Message}";
-                        MessageBox.Show($"Error durante la descarga de {itemurl.Nombre}: {ex.Message}");
+                        toolStripStatusLabel1.Text = $"Error en {itemurl.Nombre}: {ex.Message}";
+                        MessageBox.Show($"Error durante la descarga de {itemurl.Nombre}: {ex.Message}", "Error de descarga", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
                     finally
                     {
-                        dataGridView1.CargarGrid(new List<string> { "Nombre", "Status", "Tiempo" }, colaUrls);
-                        dataGridView2.CargarGrid(new List<string> { "Titulo", "Extension", "TiempoDescarga", "Ubicacion" }, downloadscompleted);
+                        dataGridView1.RefrescarGrid(colaUrls);
+                        dataGridView2.RefrescarGrid(downloadscompleted);
                     }
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message);
+                MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             finally
             {
-                IsOcupied = false;
+                toolStripProgressBar1.Value = 0;
+                toolStripStatusLabel1.Text = "Listo";
+                SetOcupado(false);
             }
+        }
+
+        /// <summary>
+        /// Actualiza el status strip con la descarga actual y su avance, redondeado de a 10%.
+        /// </summary>
+        private void ActualizarProgreso(string nombreArchivo, int porcentaje, string accion)
+        {
+            porcentaje = Math.Max(0, Math.Min(100, porcentaje));
+            toolStripProgressBar1.Value = porcentaje;
+            toolStripStatusLabel1.Text = $"{accion}: {nombreArchivo} ({porcentaje}%)";
         }
 
         private async Task AgregarUrl()
         {
-            IsOcupied = true;
+            SetOcupado(true);
 
             try
             {
                 var encolados = await ObtenerUrls();
+
+                if (!encolados.Any())
+                {
+                    MessageBox.Show("No se encontraron URLs de YouTube válidas.", "Sin resultados", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
 
                 foreach (var item in encolados)
                 {
                     if (!colaUrls.Any(x => x.Url == item.Url) && !downloadscompleted.Any(x => x.Url == item.Url))
                         colaUrls.Add(item);
                     else
-                        MessageBox.Show("Ya está agregado ese tema");
+                        MessageBox.Show($"Ya está agregado: {item.Nombre}", "Tema duplicado", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message);
+                MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             finally
             {
-                dataGridView1.CargarGrid(new List<string> { "Nombre", "Status", "Tiempo" }, colaUrls);
-                IsOcupied = false;
+                dataGridView1.RefrescarGrid(colaUrls);
+                SetOcupado(false);
             }
         }
 
-        private void VerifySelectDirectory()
+        /// <summary>
+        /// Pide un directorio de destino hasta obtener uno válido.
+        /// Devuelve false si el usuario cancela el diálogo, para no quedar reabriéndolo indefinidamente.
+        /// </summary>
+        private bool VerifySelectDirectory()
         {
             while (String.IsNullOrEmpty(outputDirectory))
             {
-                if (folderBrowserDialog1.ShowDialog() == DialogResult.OK)
-                {
-                    outputDirectory = folderBrowserDialog1.SelectedPath;
-                    destino_descargas_label.Text = outputDirectory;
-                }
+                if (folderBrowserDialog1.ShowDialog() != DialogResult.OK)
+                    return false;
+
+                outputDirectory = folderBrowserDialog1.SelectedPath;
+                destino_descargas_label.Text = outputDirectory;
                 toolStripStatusLabel1.Text = "";
             }
+            return true;
         }
 
         private async Task<List<Encolado>> ObtenerUrls()
@@ -229,5 +329,6 @@ namespace MP3_Downloader
         }
 
         #endregion
+
     }
 }

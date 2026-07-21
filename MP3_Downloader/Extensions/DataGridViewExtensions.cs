@@ -32,13 +32,35 @@ namespace MP3_Downloader
             dataGridView.ReadOnly = true; // Hacer todo el DataGridView de solo lectura
             dataGridView.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
             dataGridView.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.AllCells;
+            dataGridView.AllowUserToAddRows = false;
+            dataGridView.AllowUserToDeleteRows = false;
+            dataGridView.AllowUserToResizeRows = false;
+            dataGridView.AllowUserToOrderColumns = false;
+            dataGridView.RowHeadersVisible = false;
+            dataGridView.ScrollBars = ScrollBars.Both;
+            dataGridView.BorderStyle = BorderStyle.None;
+            dataGridView.CellBorderStyle = DataGridViewCellBorderStyle.SingleHorizontal;
+            dataGridView.ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.Single;
+            dataGridView.EnableHeadersVisualStyles = false;
+            dataGridView.BackgroundColor = Color.White;
+            dataGridView.GridColor = Color.Gainsboro;
+            dataGridView.RowTemplate.Height = 24;
+            dataGridView.ColumnHeadersHeight = 30;
 
             // Configurar estilos
-            dataGridView.DefaultCellStyle.Font = new Font("Calibri", 8);
+            dataGridView.DefaultCellStyle.Font = new Font("Calibri", 9);
             dataGridView.DefaultCellStyle.ForeColor = Color.Black; // Establecer el color del texto
-            dataGridView.ColumnHeadersDefaultCellStyle.Font = new Font("Calibri", 8, FontStyle.Bold);
-            dataGridView.ColumnHeadersDefaultCellStyle.ForeColor = Color.Black; // Establecer el color del texto en las cabeceras
-            dataGridView.RowsDefaultCellStyle.Font = new Font("Calibri", 8);
+            dataGridView.DefaultCellStyle.Padding = new Padding(4, 0, 4, 0);
+            dataGridView.DefaultCellStyle.SelectionBackColor = Color.FromArgb(70, 130, 90);
+            dataGridView.DefaultCellStyle.SelectionForeColor = Color.White;
+            dataGridView.AlternatingRowsDefaultCellStyle.BackColor = Color.FromArgb(244, 244, 244);
+
+            dataGridView.ColumnHeadersDefaultCellStyle.Font = new Font("Calibri", 9, FontStyle.Bold);
+            dataGridView.ColumnHeadersDefaultCellStyle.ForeColor = Color.White; // Establecer el color del texto en las cabeceras
+            dataGridView.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(60, 95, 60);
+            dataGridView.ColumnHeadersDefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleLeft;
+
+            dataGridView.RowsDefaultCellStyle.Font = new Font("Calibri", 9);
             dataGridView.RowsDefaultCellStyle.ForeColor = Color.Black; // Establecer el color del texto en las filas
         }
 
@@ -59,6 +81,20 @@ namespace MP3_Downloader
             dataGridView.DataSource = null;
             dataGridView.DataSource = listaDeItems;
             dataGridView.AutoResizeColumns();
+        }
+
+        /// <summary>
+        /// Refresca los datos de una grilla ya configurada (mismas columnas) conservando
+        /// la posición del scroll, para evitar el parpadeo y el salto al tope que produce
+        /// reconstruir columnas en cada actualización (por ejemplo, en cada tick de progreso).
+        /// </summary>
+        public static void RefrescarGrid<T>(this DataGridView dataGridView, List<T> listaDeItems)
+        {
+            int primeraFilaVisible = dataGridView.Rows.Count > 0 ? dataGridView.FirstDisplayedScrollingRowIndex : -1;
+            dataGridView.DataSource = null;
+            dataGridView.DataSource = listaDeItems;
+            if (primeraFilaVisible >= 0 && primeraFilaVisible < dataGridView.Rows.Count)
+                dataGridView.FirstDisplayedScrollingRowIndex = primeraFilaVisible;
         }
 
         public static void CargarGrids<T>(this DataGridView dataGridView, List<KeyValuePair<string, string>> campos, List<T> listaDeItems)

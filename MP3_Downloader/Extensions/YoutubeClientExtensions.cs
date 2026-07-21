@@ -23,7 +23,7 @@ namespace MP3_Downloader.Extensions
     {
         #region Descargas
   
-        public static async Task<DownloadedVideo> DownloadMP3Async(this YoutubeClient youtube, string videoUrl, string outputDirectory)
+        public static async Task<DownloadedVideo> DownloadMP3Async(this YoutubeClient youtube, string videoUrl, string outputDirectory, IProgress<double> progress = null)
         {
             // Inicializar el cronómetro y la lista de logs
             Stopwatch stopwatch = new Stopwatch();
@@ -68,7 +68,7 @@ namespace MP3_Downloader.Extensions
                 string outputFilePath = Path.Combine(outputDirectory, $"{sanitizedTitle}.mp3");
 
                 stopwatch.Restart();
-                await youtube.Videos.Streams.DownloadAsync(streamInfo, tempOutputFilePath);
+                await youtube.Videos.Streams.DownloadAsync(streamInfo, tempOutputFilePath, progress);
                 stopwatch.Stop();
                 logMessages.Add($"[DownloadMP3Async] DownloadAsync: {stopwatch.ElapsedMilliseconds} ms - Video: {video.Title}");
 
