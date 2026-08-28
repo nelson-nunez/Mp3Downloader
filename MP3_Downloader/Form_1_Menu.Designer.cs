@@ -53,6 +53,7 @@
             // descargas_MenuItem
             // 
             this.descargas_MenuItem.Image = global::MP3_Downloader.Properties.Resources.descargar;
+            this.descargas_MenuItem.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.descargas_MenuItem.Name = "descargas_MenuItem";
             this.descargas_MenuItem.Size = new System.Drawing.Size(88, 20);
             this.descargas_MenuItem.Text = "Descargas";
@@ -61,6 +62,7 @@
             // convertidor_MenuItem
             // 
             this.convertidor_MenuItem.Image = global::MP3_Downloader.Properties.Resources.mp3;
+            this.convertidor_MenuItem.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.convertidor_MenuItem.Name = "convertidor_MenuItem";
             this.convertidor_MenuItem.Size = new System.Drawing.Size(98, 20);
             this.convertidor_MenuItem.Text = "Convertidor";
@@ -69,6 +71,7 @@
             // info_MenuItem1
             // 
             this.info_MenuItem1.Image = global::MP3_Downloader.Properties.Resources.papel;
+            this.info_MenuItem1.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.info_MenuItem1.Name = "info_MenuItem1";
             this.info_MenuItem1.Size = new System.Drawing.Size(82, 20);
             this.info_MenuItem1.Text = "Informes";
@@ -76,6 +79,7 @@
             // salirToolStripMenuItem1
             // 
             this.salirToolStripMenuItem1.Image = global::MP3_Downloader.Properties.Resources.cerrar;
+            this.salirToolStripMenuItem1.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.salirToolStripMenuItem1.Name = "salirToolStripMenuItem1";
             this.salirToolStripMenuItem1.Size = new System.Drawing.Size(57, 20);
             this.salirToolStripMenuItem1.Text = "Salir";
@@ -92,6 +96,7 @@
             this.DoubleBuffered = true;
             this.Name = "Form_1_Menu";
             this.Text = "Form_Menu";
+            this.Load += new System.EventHandler(this.Form_1_Menu_Load);
             this.menuStrip1.ResumeLayout(false);
             this.menuStrip1.PerformLayout();
             this.ResumeLayout(false);

@@ -8,12 +8,14 @@ using System.ComponentModel;
 using System.Data;
 using System.Diagnostics;
 using System.Drawing;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection.Emit;
 using System.Text;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Xml.Linq;
@@ -37,13 +39,7 @@ namespace MP3_Downloader
 
         public Form_Convertidor()
         {
-            InitializeComponent();        
-
-            convirtiendo_Label.MaximumSize = new Size(450, 0);
-            convirtiendo_Label.AutoSize = true;
-            
-            carpeta_a_conver_label.MaximumSize = new Size(450, 0);
-            carpeta_a_conver_label.AutoSize = true;
+            InitializeComponent();
 
             #region Directorios
 
@@ -77,102 +73,198 @@ namespace MP3_Downloader
             dataGridView1.ConfigurarGrids();
         }
 
+        private void EscribirSalida(string mensaje)
+        {
+            salidas_txt.AppendText($"[{DateTime.Now:HH:mm:ss}] {mensaje}{Environment.NewLine}");
+            salidas_txt.SelectionStart = salidas_txt.TextLength;
+            salidas_txt.ScrollToCaret();
+        }
+
+        private void SetBotonesEnabled(bool habilitado)
+        {
+            button4.Enabled = habilitado;
+            button5.Enabled = habilitado;
+            button6.Enabled = habilitado;
+            button_CambiarOrden.Enabled = habilitado;
+        }
+
+        private static string LimpiarNombre(string nombre)
+        {
+            string resultado = Regex.Replace(nombre, "new_", "", RegexOptions.IgnoreCase);
+            resultado = resultado.Replace('_', ' ');
+            resultado = resultado.ToLowerInvariant();
+            resultado = CultureInfo.InvariantCulture.TextInfo.ToTitleCase(resultado);
+            resultado = Regex.Replace(resultado, @"[^\p{L}\p{Nd}\s-]", "");
+            resultado = Regex.Replace(resultado, @"\s+", " ").Trim();
+            return resultado;
+        }
+
         private async void button_Directorio_Click(object sender, EventArgs e)
         {
             if (folderBrowserDialog2.ShowDialog() == DialogResult.OK)
             {
                 convertedDirectory = folderBrowserDialog2.SelectedPath;
-                carpeta_a_conver_label.Text = convertedDirectory;
+                destino_convertir_txt.Text = convertedDirectory;
                 await ListarArchivosMp3Async();
             }
         }
 
         private async void button_Convertir_Click(object sender, EventArgs e)
         {
+            if (!await SelectDirectory())
+            {
+                EscribirSalida("Operación cancelada: no se seleccionó ninguna carpeta.");
+                return;
+            }
+            if (IsOcupied)
+            {
+                EscribirSalida("Awantiaaaaa estoy trabajando");
+                return;
+            }
+
             try
             {
-                SelectDirectory();
-                if (IsOcupied)
-                {
-                    MessageBox.Show("Awantiaaaaa estoy trabajando");
-                    return;
-                }
-
                 InputsExtensions.PedirConfirmacion("Desea continuar con la conversión? Se duplicaran todos los archivos mp3");
                 await ConvertirDirectorio();
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message);
+                EscribirSalida("Error: " + ex.Message);
             }
             finally
             {
-                await ListarArchivosMp3Async(); 
-                button4.Text = "Convertir carpeta a mp3";
-                convirtiendo_Label.Text = "";
-                button4.BackColor = Color.White;
+                await ListarArchivosMp3Async();
+                button4.Text = "Convertir todo a mp3";
+                button4.BackColor = Color.DarkSeaGreen;
                 IsOcupied = false;
+                SetBotonesEnabled(true);
             }
         }
       
         private async void button_EliminarDuplicados_Click(object sender, EventArgs e)
         {
+            if (!await SelectDirectory())
+            {
+                EscribirSalida("Operación cancelada: no se seleccionó ninguna carpeta.");
+                return;
+            }
+            if (IsOcupied)
+            {
+                EscribirSalida("Awantiaaaaa estoy trabajando");
+                return;
+            }
+
             try
             {
-                SelectDirectory(); 
-                if (IsOcupied)
-                {
-                    MessageBox.Show("Awantiaaaaa estoy trabajando");
-                    return;
-                }
-                    
                 InputsExtensions.PedirConfirmacion("Desea continuar con la eliminación de duplicados?");
+                IsOcupied = true;
+                SetBotonesEnabled(false);
                 button6.Text = "Eliminando duplicados...";
                 await Task.Delay(2000);
                 var cant = await convertedDirectory.EliminarArchivosDuplicadosAsync();
-                MessageBox.Show("Se eliminaron " + cant + " archivos duplicados.");
+                EscribirSalida("Se eliminaron " + cant + " archivos duplicados.");
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message);
+                EscribirSalida("Error: " + ex.Message);
             }
             finally
             {
                 await ListarArchivosMp3Async();
                 button6.Text = "Eliminar duplicados";
                 IsOcupied = false;
+                SetBotonesEnabled(true);
             }
         }
 
-        private async void SelectDirectory()
+        private async void button_CambiarOrden_Click(object sender, EventArgs e)
+        {
+            if (!await SelectDirectory())
+            {
+                EscribirSalida("Operación cancelada: no se seleccionó ninguna carpeta.");
+                return;
+            }
+            if (IsOcupied)
+            {
+                EscribirSalida("Awantiaaaaa estoy trabajando");
+                return;
+            }
+
+            try
+            {
+                InputsExtensions.PedirConfirmacion("Desea continuar con el cambio de orden? Se renombrarán todas las canciones de la carpeta.");
+                IsOcupied = true;
+                SetBotonesEnabled(false);
+                button_CambiarOrden.Text = "Cambiando orden...";
+
+                string[] audioFiles = Directory.GetFiles(convertedDirectory, "*.mp3");
+                var numerosUsados = new HashSet<int>();
+                var random = new Random();
+
+                foreach (string filePath in audioFiles)
+                {
+                    string directorio = Path.GetDirectoryName(filePath);
+                    string extension = Path.GetExtension(filePath);
+                    string nombreBase = Regex.Replace(Path.GetFileNameWithoutExtension(filePath), @"^\d{3}_", "");
+                    nombreBase = LimpiarNombre(nombreBase);
+
+                    int numero;
+                    do
+                    {
+                        numero = random.Next(0, 1000);
+                    } while (!numerosUsados.Add(numero));
+
+                    string nuevaRuta = Path.Combine(directorio, $"{numero:D3}_{nombreBase}{extension}");
+                    File.Move(filePath, nuevaRuta);
+                }
+
+                EscribirSalida("Se cambió el orden de " + audioFiles.Length + " canciones.");
+            }
+            catch (Exception ex)
+            {
+                EscribirSalida("Error: " + ex.Message);
+            }
+            finally
+            {
+                await ListarArchivosMp3Async();
+                button_CambiarOrden.Text = "Cambiar orden";
+                IsOcupied = false;
+                SetBotonesEnabled(true);
+            }
+        }
+
+        private async Task<bool> SelectDirectory()
         {
             while (String.IsNullOrEmpty(convertedDirectory))
             {
-                if (folderBrowserDialog2.ShowDialog() == DialogResult.OK)
+                if (folderBrowserDialog2.ShowDialog() != DialogResult.OK)
                 {
-                    convertedDirectory = folderBrowserDialog2.SelectedPath;
+                    return false;
                 }
+                convertedDirectory = folderBrowserDialog2.SelectedPath;
                 await ListarArchivosMp3Async();
             }
+            return true;
         }
     
         private async Task ConvertirDirectorio()
         {
             IsOcupied = true;
+            SetBotonesEnabled(false);
             button4.Text = "Convirtiendo, espere..";
             button4.BackColor = Color.DarkRed;
             string[] audioFiles = Directory.GetFiles(convertedDirectory, "*.mp3");
             List<Task> conversionTasks = new List<Task>();
             foreach (string filePath in audioFiles)
             {
-                convirtiendo_Label.Text = "Convirtiendo: " + filePath;
+                EscribirSalida("Convirtiendo: " + Path.GetFileName(filePath));
                 await Task.Delay(100);
                 Task conversionTask = YoutubeClientExtensions.ConvertToMP3Async(filePath, convertedDirectory);
                 conversionTasks.Add(conversionTask);
             }
             // Esperar a que todas las conversiones terminen
             await Task.WhenAll(conversionTasks);
-            MessageBox.Show("Todos los archivos se han convertido correctamente.");
+            EscribirSalida("Todos los archivos se han convertido correctamente.");
             IsOcupied = false;
         }
 
@@ -190,6 +282,11 @@ namespace MP3_Downloader
             }
 
             dataGridView1.CargarGrid(new List<string> { "Nombre", "Duracion", "Extension" }, colaArchivos);
+        }
+
+        private void Form_Convertidor_Load(object sender, EventArgs e)
+        {
+
         }
     }
 }

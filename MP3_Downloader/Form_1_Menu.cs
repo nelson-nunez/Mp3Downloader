@@ -28,7 +28,26 @@ namespace MP3_Downloader
             this.MaximizeBox = false;
             this.StartPosition = FormStartPosition.CenterScreen;
 
+            this.menuStrip1.Renderer = new MenuStripBorderRenderer();
+
             AbrirFormGeneral(ref form_Descargas);
+        }
+
+        // Dibuja un borde gris alrededor de cada botón del menuStrip
+        private class MenuStripBorderRenderer : ToolStripProfessionalRenderer
+        {
+            protected override void OnRenderMenuItemBackground(ToolStripItemRenderEventArgs e)
+            {
+                base.OnRenderMenuItemBackground(e);
+
+                if (e.Item.OwnerItem == null)
+                {
+                    Rectangle rect = new Rectangle(Point.Empty, e.Item.Size);
+                    rect.Width -= 1;
+                    rect.Height -= 1;
+                    e.Graphics.DrawRectangle(Pens.Gray, rect);
+                }
+            }
         }
 
         private void AbrirForm_Descargas(object sender, EventArgs e)
@@ -67,6 +86,11 @@ namespace MP3_Downloader
             {
                 childForm.Close();
             }
+        }
+
+        private void Form_1_Menu_Load(object sender, EventArgs e)
+        {
+
         }
     }
 }

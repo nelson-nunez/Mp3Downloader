@@ -39,19 +39,13 @@ namespace MP3_Downloader
             InitializeComponent();
             dataGridView1.ConfigurarGrids();
             dataGridView2.ConfigurarGrids();
-            dataGridView1.CargarGrid(new List<string> { "Nombre", "Status", "Tiempo" }, colaUrls);
-            dataGridView2.CargarGrid(new List<string> { "Titulo", "Extension", "TiempoDescarga", "Ubicacion" }, downloadscompleted);
+            dataGridView1.CargarGrid(new List<string> { "Nombre", "Status", "Tiempo" }, OrdenReciente(colaUrls));
+            dataGridView2.CargarGrid(new List<string> { "Titulo", "Extension", "TiempoDescarga", "Ubicacion" }, OrdenReciente(downloadscompleted));
+            ActualizarTitulosGrillas();
 
             // Los iconos de estos botones se achican para que no dominen un botón de 140x35
             button1.Image = RedimensionarIcono(Properties.Resources.descargar, 20, 20);
             button2.Image = RedimensionarIcono(Properties.Resources.agregar, 20, 20);
-
-            #region Configurar labels
-
-            destino_descargas_label.MaximumSize = new Size(170,0);
-            destino_descargas_label.AutoSize = true;
-
-            #endregion
 
             #region Directorios
 
@@ -62,7 +56,7 @@ namespace MP3_Downloader
                 if (Directory.Exists(directorioNormal))
                 {
                     outputDirectory = directorioNormal;
-                    destino_descargas_label.Text = outputDirectory;
+                    destino_descargas_txt.Text = outputDirectory;
                 }
                 // Configurar la ruta de FFmpeg
                 string ffmpegPath = Path.Combine(Directory.GetCurrentDirectory(), "ffmpeg.exe");
@@ -103,6 +97,31 @@ namespace MP3_Downloader
             IsOcupied = ocupado;
             button_EliminarPendiente.Enabled = !ocupado;
             button_EliminarTodos.Enabled = !ocupado;
+        }
+
+        private void ActualizarTitulosGrillas()
+        {
+            groupBox1.Text = $"Descargas Pendientes ({colaUrls.Count})";
+            groupBox3.Text = $"Descargas Finalizadas ({downloadscompleted.Count})";
+        }
+
+        // Los últimos elementos agregados se muestran arriba de todo en los grids,
+        // sin alterar el orden real de colaUrls/downloadscompleted (se usan por índice al descargar).
+        private static List<T> OrdenReciente<T>(List<T> lista)
+        {
+            var copia = new List<T>(lista);
+            copia.Reverse();
+            return copia;
+        }
+
+        private void RefrescarPendientes()
+        {
+            dataGridView1.RefrescarGrid(OrdenReciente(colaUrls));
+        }
+
+        private void RefrescarCompletados()
+        {
+            dataGridView2.RefrescarGrid(OrdenReciente(downloadscompleted));
         }
 
         #region Buttons
@@ -149,7 +168,8 @@ namespace MP3_Downloader
             if (folderBrowserDialog1.ShowDialog() == DialogResult.OK)
             {
                 outputDirectory = folderBrowserDialog1.SelectedPath;
-                destino_descargas_label.Text = outputDirectory;
+                destino_descargas_txt.Text = outputDirectory;
+                toolStripStatusLabel1.Text = "";
             }
         }
 
@@ -159,7 +179,8 @@ namespace MP3_Downloader
             {
                 var seleccionado = dataGridView1.VerificarYRetornarSeleccion<Encolado>();
                 colaUrls.Remove(seleccionado);
-                dataGridView1.RefrescarGrid(colaUrls);
+                RefrescarPendientes();
+                ActualizarTitulosGrillas();
             }
             catch (Exception ex)
             {
@@ -180,7 +201,94 @@ namespace MP3_Downloader
                 return;
 
             colaUrls.Clear();
-            dataGridView1.RefrescarGrid(colaUrls);
+            RefrescarPendientes();
+            ActualizarTitulosGrillas();
+        }
+
+        private void button_ExportarLista_Click(object sender, EventArgs e)
+        {
+            if (!colaUrls.Any())
+            {
+                MessageBox.Show("No hay descargas pendientes para exportar.", "Cola vacía", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            using (var dialogo = new SaveFileDialog())
+            {
+                dialogo.Filter = "Archivo de texto (*.txt)|*.txt";
+                dialogo.FileName = "ListaPendientes.txt";
+
+                if (dialogo.ShowDialog() != DialogResult.OK)
+                    return;
+
+                try
+                {
+                    var lineas = colaUrls.Select((item, indice) => $"{indice + 1}|{item.Nombre}|{item.Url}");
+                    File.WriteAllLines(dialogo.FileName, lineas);
+
+                    MessageBox.Show($"Se exportaron {colaUrls.Count} temas.", "Exportación completa", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Error al exportar la lista: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+        }
+
+        private void button_ImportarLista_Click(object sender, EventArgs e)
+        {
+            using (var dialogo = new OpenFileDialog())
+            {
+                dialogo.Filter = "Archivo de texto (*.txt)|*.txt";
+
+                if (dialogo.ShowDialog() != DialogResult.OK)
+                    return;
+
+                try
+                {
+                    var lineas = File.ReadAllLines(dialogo.FileName);
+                    int agregados = 0;
+                    int duplicados = 0;
+
+                    foreach (var linea in lineas)
+                    {
+                        if (string.IsNullOrWhiteSpace(linea))
+                            continue;
+
+                        int primerPipe = linea.IndexOf('|');
+                        int ultimoPipe = linea.LastIndexOf('|');
+                        if (primerPipe < 0 || ultimoPipe <= primerPipe)
+                            continue;
+
+                        string nombre = linea.Substring(primerPipe + 1, ultimoPipe - primerPipe - 1).Trim();
+                        string url = linea.Substring(ultimoPipe + 1).Trim();
+
+                        if (string.IsNullOrWhiteSpace(url))
+                            continue;
+
+                        if (colaUrls.Any(x => x.Url == url) || downloadscompleted.Any(x => x.Url == url))
+                        {
+                            duplicados++;
+                            continue;
+                        }
+
+                        colaUrls.Add(new Encolado(url, nombre, "Encolado", "0"));
+                        agregados++;
+                    }
+
+                    RefrescarPendientes();
+                    ActualizarTitulosGrillas();
+
+                    string mensaje = $"Se agregaron {agregados} temas a la cola.";
+                    if (duplicados > 0)
+                        mensaje += $" Se omitieron {duplicados} duplicados.";
+                    MessageBox.Show(mensaje, "Importación completa", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Error al importar la lista: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
         }
 
         #endregion
@@ -199,7 +307,7 @@ namespace MP3_Downloader
                     {
                         itemurl.Status = "Descargando...";
                         ActualizarProgreso(itemurl.Nombre, 0, "Descargando");
-                        dataGridView1.RefrescarGrid(colaUrls);
+                        RefrescarPendientes();
 
                         int ultimoPorcentaje = -1;
                         var progreso = new Progress<double>(p =>
@@ -236,8 +344,9 @@ namespace MP3_Downloader
                     }
                     finally
                     {
-                        dataGridView1.RefrescarGrid(colaUrls);
-                        dataGridView2.RefrescarGrid(downloadscompleted);
+                        RefrescarPendientes();
+                        RefrescarCompletados();
+                        ActualizarTitulosGrillas();
                     }
                 }
             }
@@ -291,7 +400,8 @@ namespace MP3_Downloader
             }
             finally
             {
-                dataGridView1.RefrescarGrid(colaUrls);
+                RefrescarPendientes();
+                ActualizarTitulosGrillas();
                 SetOcupado(false);
             }
         }
@@ -308,7 +418,7 @@ namespace MP3_Downloader
                     return false;
 
                 outputDirectory = folderBrowserDialog1.SelectedPath;
-                destino_descargas_label.Text = outputDirectory;
+                destino_descargas_txt.Text = outputDirectory;
                 toolStripStatusLabel1.Text = "";
             }
             return true;
@@ -330,5 +440,9 @@ namespace MP3_Downloader
 
         #endregion
 
+        private void Form_Descargas_Load(object sender, EventArgs e)
+        {
+
+        }
     }
 }

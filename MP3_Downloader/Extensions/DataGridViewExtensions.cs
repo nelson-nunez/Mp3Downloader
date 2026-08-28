@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -10,6 +11,35 @@ namespace MP3_Downloader
 {
     public static class DataGridViewExtensions
     {
+        // Un DataGridView bindeado directamente a un List<T>, y reasignando
+        // DataSource = null / DataSource = lista en cada refresco, desincroniza el
+        // CurrencyManager interno (root cause del "El índice -1 no tiene un valor").
+        // Se usa un BindingSource persistente por grid: su DataSource se actualiza,
+        // pero el DataGridView.DataSource se asigna una única vez.
+        private static readonly ConditionalWeakTable<DataGridView, BindingSource> _bindingSources
+            = new ConditionalWeakTable<DataGridView, BindingSource>();
+
+        private static BindingSource ObtenerBindingSource(DataGridView dataGridView)
+        {
+            return _bindingSources.GetValue(dataGridView, grid =>
+            {
+                var bindingSource = new BindingSource();
+                grid.DataSource = bindingSource;
+                return bindingSource;
+            });
+        }
+
+        // BindingSource.DataSource ignora la asignación si es la MISMA referencia
+        // que ya tenía (p. ej. listas de campo mutadas in-place y reenviadas con
+        // RefrescarGrid). En ese caso hay que forzar el refresco con ResetBindings.
+        private static void ActualizarDataSource<T>(BindingSource bindingSource, List<T> listaDeItems)
+        {
+            if (ReferenceEquals(bindingSource.DataSource, listaDeItems))
+                bindingSource.ResetBindings(false);
+            else
+                bindingSource.DataSource = listaDeItems;
+        }
+
         public static T VerificarYRetornarSeleccion<T>(this DataGridView grid) where T : class
         {
             if (grid == null)
@@ -66,6 +96,8 @@ namespace MP3_Downloader
 
         public static void CargarGrid<T>(this DataGridView dataGridView, List<string> campos, List<T> listaDeItems)
         {
+            var bindingSource = ObtenerBindingSource(dataGridView);
+
             dataGridView.Columns.Clear();
             foreach (var field in campos)
             {
@@ -78,8 +110,8 @@ namespace MP3_Downloader
                 dataGridView.Columns.Add(columna);
             }
             dataGridView.AutoGenerateColumns = false;
-            dataGridView.DataSource = null;
-            dataGridView.DataSource = listaDeItems;
+
+            ActualizarDataSource(bindingSource, listaDeItems);
             dataGridView.AutoResizeColumns();
         }
 
@@ -90,15 +122,19 @@ namespace MP3_Downloader
         /// </summary>
         public static void RefrescarGrid<T>(this DataGridView dataGridView, List<T> listaDeItems)
         {
+            var bindingSource = ObtenerBindingSource(dataGridView);
             int primeraFilaVisible = dataGridView.Rows.Count > 0 ? dataGridView.FirstDisplayedScrollingRowIndex : -1;
-            dataGridView.DataSource = null;
-            dataGridView.DataSource = listaDeItems;
+
+            ActualizarDataSource(bindingSource, listaDeItems);
+
             if (primeraFilaVisible >= 0 && primeraFilaVisible < dataGridView.Rows.Count)
                 dataGridView.FirstDisplayedScrollingRowIndex = primeraFilaVisible;
         }
 
         public static void CargarGrids<T>(this DataGridView dataGridView, List<KeyValuePair<string, string>> campos, List<T> listaDeItems)
         {
+            var bindingSource = ObtenerBindingSource(dataGridView);
+
             dataGridView.Columns.Clear();
             foreach (var field in campos)
             {
@@ -111,8 +147,8 @@ namespace MP3_Downloader
                 dataGridView.Columns.Add(columna);
             }
             dataGridView.AutoGenerateColumns = false;
-            dataGridView.DataSource = null;
-            dataGridView.DataSource = listaDeItems;
+
+            ActualizarDataSource(bindingSource, listaDeItems);
             dataGridView.AutoResizeColumns();
         }
     }
