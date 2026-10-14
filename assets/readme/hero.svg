@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 340" width="100%" role="img" aria-labelledby="t d">
+  <title id="t">MP3 Downloader</title>
+  <desc id="d">Aplicación de escritorio para Windows que descarga el audio de videos de YouTube y lo convierte a MP3.</desc>
+  <style>
+    :root{--bg:#fbf7f4;--fg:#1b1b24;--mut:#5d5d6b;--src:#d93a3a;--out:#0f9d82;--line:#e4dcd6}
+    @media (prefers-color-scheme: dark){:root{--bg:#12141c;--fg:#f4f1ee;--mut:#a3a3b2;--src:#ff6b6b;--out:#3ddbb5;--line:#2a2d3a}}
+    .bg{fill:var(--bg)} .ln{stroke:var(--line);stroke-width:2;fill:none}
+    .h{font:700 64px 'Segoe UI',system-ui,sans-serif;fill:var(--fg)}
+    .s{font:400 26px 'Segoe UI',system-ui,sans-serif;fill:var(--mut)}
+    .tag{font:600 20px Consolas,'Courier New',monospace;fill:var(--src)}
+    .b{fill:var(--src)} .b2{fill:var(--out)}
+    @keyframes p{0%,100%{transform:scaleY(1)}50%{transform:scaleY(.7)}}
+    .w rect{transform-box:fill-box;transform-origin:center;animation:p 2.4s ease-in-out infinite}
+    .w rect:nth-child(odd){animation-delay:.6s}
+  </style>
+  <rect class="bg" width="1200" height="340" rx="20"/>
+  <rect class="ln" x="1" y="1" width="1198" height="338" rx="20"/>
+  <text class="tag" x="60" y="92">youtube.com  →  .mp3</text>
+  <text class="h" x="60" y="170">MP3 Downloader</text>
+  <text class="s" x="60" y="220">Encola enlaces de YouTube y obtén</text>
+  <text class="s" x="60" y="256">tus canciones en MP3. Windows.</text>
+  <g class="w">
+    <rect class="b" x="640" y="150" width="14" height="40" rx="7"/>
+    <rect class="b" x="666" y="135" width="14" height="70" rx="7"/>
+    <rect class="b" x="692" y="115" width="14" height="110" rx="7"/>
+    <rect class="b" x="718" y="140" width="14" height="60" rx="7"/>
+    <rect class="b" x="744" y="105" width="14" height="130" rx="7"/>
+    <rect class="b" x="770" y="125" width="14" height="90" rx="7"/>
+    <rect class="b" x="796" y="95" width="14" height="150" rx="7"/>
+    <rect class="b" x="822" y="130" width="14" height="80" rx="7"/>
+    <rect class="b" x="848" y="110" width="14" height="120" rx="7"/>
+    <rect class="b" x="874" y="145" width="14" height="50" rx="7"/>
+    <rect class="b2" x="900" y="120" width="14" height="100" rx="7"/>
+    <rect class="b2" x="926" y="100" width="14" height="140" rx="7"/>
+    <rect class="b2" x="952" y="135" width="14" height="70" rx="7"/>
+    <rect class="b2" x="978" y="115" width="14" height="110" rx="7"/>
+    <rect class="b2" x="1004" y="148" width="14" height="45" rx="7"/>
+    <rect class="b2" x="1030" y="125" width="14" height="90" rx="7"/>
+    <rect class="b2" x="1056" y="108" width="14" height="125" rx="7"/>
+    <rect class="b2" x="1082" y="140" width="14" height="60" rx="7"/>
+    <rect class="b2" x="1108" y="123" width="14" height="95" rx="7"/>
+    <rect class="b2" x="1134" y="153" width="14" height="35" rx="7"/>
+  </g>
+</svg>
