@@ -55,20 +55,8 @@ Un tema por línea, separado por `|`:
 
 - Windows con .NET Framework 4.8.
 - `ffmpeg.exe` junto al ejecutable (o dos carpetas por encima del directorio de trabajo). La app lo busca al abrir y muestra un error si no lo encuentra.
-
 > [!NOTE]
 > `ffmpeg.exe` pesa más de 100 MB y está excluido del repositorio (`.gitignore`). Descárgalo desde [ffmpeg.org](https://ffmpeg.org/download.html) y colócalo en la carpeta del ejecutable.
-
-## Compilar y ejecutar
-
-1. Clona el repositorio y abre `MP3_Downloader.sln` en Visual Studio 2022.
-2. Restaura los paquetes NuGet y compila.
-3. Copia `ffmpeg.exe` a la carpeta de salida (`bin\Debug` o `bin\Release`).
-4. Ejecuta la app y abre el módulo **Descargas**.
-
-```bash
-git clone https://github.com/nelson-nunez/Mp3Downloader.git
-```
 
 **Primer uso:** copia un enlace de YouTube, pulsa el botón de agregar a la cola, elige la carpeta de destino y pulsa descargar.
 
@@ -81,29 +69,6 @@ git clone https://github.com/nelson-nunez/Mp3Downloader.git
 | [TagLibSharp](https://github.com/mono/taglib-sharp) | Manejo de metadatos de audio |
 | ILMerge | Empaquetado en un único ejecutable (ver `Readme.txt`) |
 
-## Estructura
-
-```text
-MP3_Downloader/
-├── Form_1_Menu.cs        Ventana principal (MDI)
-├── Form_Descargas.cs     Módulo de descargas y cola
-├── Form_Convertidor.cs   Módulo de conversión y limpieza
-├── Extensions/           Descarga, conversión, duplicados, grids
-├── Models/               Encolado, DownloadedVideo, repositorio
-└── Resources/            Iconos de la interfaz
-```
-
-## Límites conocidos
-
-- Solo acepta enlaces de `youtube.com`; los enlaces cortos `youtu.be` se ignoran.
-- Si no existe la carpeta `F:\4.Mi música\ZZ-NUEVAS-DESCARGAS`, hay que elegir el destino a mano.
-- Es una herramienta personal: no hay pruebas automatizadas.
-
 ## Uso responsable
 
 Descargar contenido de YouTube puede infringir sus términos de servicio y los derechos de autor. Úsala solo con contenido propio, libre o con permiso.
-
-## Licencia
-
-<!-- TODO: el repositorio no incluye archivo de licencia. Elige una y agrega LICENSE. -->
-Sin licencia definida por ahora.
